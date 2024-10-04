@@ -1,9 +1,6 @@
-import tools
-from machine import Timer,ADC,Pin,PWM,RTC
+from machine import Timer,ADC,PWM,Pin,RTC
 
-tools.connect()
-
-dc = machine.ADC(4) #
+adc = machine.ADC(4) #
 pwm = PWM(Pin(15),freq=50)
 conversion_factor = 3.3/(65535)
 rtc = RTC()
@@ -12,7 +9,7 @@ def do_thing(t):  #定義一個do_thing函式
     
     reading = adc.read_u16() * conversion_factor
     temp = 27 - (reading - 0.706)/0.001721
-    year,month,day,weekly,hours,minuse,second,info = rtc.datetime()
+    year,month,day,weekly,hours,minuse,second,info = rtc.datetime())
     print(temp)
     
 def do_thing1(t):
