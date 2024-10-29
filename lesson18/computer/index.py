@@ -1,13 +1,30 @@
 import paho.mqtt.client as mqtt
 from datetime import datetime
 import os,csv
+import sqlite3
+from sqlite3 import Error
+
+def insert_to_sqlite(values):
+    try:
+        conn = sqlite3.connect('./data/pico.db')
+    except Exception as e:
+        print(e)
+        return
+    sql = """
+    INSERT INTO 雞舍(時間,設備,值)
+    VALUES(?,?,?)
+    """
+    cursor = conn.cursor()
+    cursor.execute(sql,values)
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 def record(topic:str,value:int | float | str):
     '''
     #檢查是否有data資料夾,沒有就建立data資料夾
     #取得今天日期,如果沒有今天日期.csv,就建立一個全新的今天日期.csv
     #將參數r的資料,儲存進入csv檔案內
-   
     #parameters topic:str -> 這是訂閱的topic
     #parameters value:int -> 這是訂閱的value
     '''
@@ -31,6 +48,7 @@ def record(topic:str,value:int | float | str):
     with open(full_path, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow([current_str,topic,value])
+        insert_to_sqlite((current_str,topic,float(value))) #加入至資料庫
 
 def on_connect(client, userdata, flags, reason_code, properties):
     #連線bloker成功時,只會執行一次

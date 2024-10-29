@@ -10,7 +10,7 @@ led->gpio15
 from machine import Timer,ADC,Pin,PWM,RTC
 import binascii
 from umqtt.simple import MQTTClient
-import tools
+import tools,config
 
 
 def do_thing(t):
@@ -21,14 +21,16 @@ def do_thing(t):
     '''
     conversion_factor = 3.3 / (65535)
     reading = adc.read_u16() * conversion_factor
-    temperature = round(27 - (reading - 0.706)/0.001721,2)  #round是內建函式；取整數，round(number, None)
-    print(f'溫度:{temperature}')  
-    mqtt.publish('SA-08/TEMP', f'{temperature}')
+    temperature = round(27 - (reading - 0.706)/0.001721,2) 
+    print(f'溫度:{temperature}')
+    mqtt.publish('SA-08/TEMPERATURE', f'{temperature}')
+    blynk_mqtt.publish('ds/temperature',f'{temperature}')
     adc_value = adc_light.read_u16()
     print(f'光線:{adc_value}')
-    line_state = 0 if adc_value < 1000 else 1
+    line_state = 0 if adc_value < 3500 else 1
     print(f'光線:{line_state}')
-    mqtt.publish('SA-08/LIGHT_LEVEL', f'{line_state}')
+    mqtt.publish('SA-08/LINE_LEVEL', f'{line_state}')
+    blynk_mqtt.publish('ds/line_status',f'{line_state}')
     
     
 def do_thing1(t):
@@ -42,13 +44,20 @@ def do_thing1(t):
     light_level = round(duty/65535*10)
     print(f'可變電阻:{light_level}')
     mqtt.publish('SA-08/LED_LEVEL', f'{light_level}')
+    blynk_mqtt.publish('ds/led_level',f'{light_level}')
+    
 
 def main():
-    pass
-       
+    global blynk_mqtt
+    print(config.BLYNK_MQTT_BROKER)
+    print(config.BLYNK_TEMPLATE_ID)
+    print(config.BLYNK_AUTH_TOKEN)
+    blynk_mqtt = MQTTClient(config.BLYNK_TEMPLATE_ID, config.BLYNK_MQTT_BROKER,user='device',password=config.BLYNK_AUTH_TOKEN,keepalive=60)
+    blynk_mqtt.connect()
+    
+        
 
 if __name__ == '__main__':
-    # 全域變數設定
     adc = ADC(4) #內建溫度
     adc1 = ADC(Pin(26)) #可變電阻
     adc_light = ADC(Pin(28)) #光敏電阻
@@ -61,14 +70,12 @@ if __name__ == '__main__':
     except Exception:
         print('不知明的錯誤')
     else:
-        #連線MQTT Broker
-        SERVER = "192.168.0.252"
+        #MQTT
+        SERVER = "192.168.2.23"
         CLIENT_ID = binascii.hexlify(machine.unique_id())
         mqtt = MQTTClient(CLIENT_ID, SERVER,user='pi',password='raspberry')
-        mqtt.connect() #此行應該在連上網路後再執行
+        mqtt.connect()
         t1 = Timer(period=2000, mode=Timer.PERIODIC, callback=do_thing)
         t2 = Timer(period=500, mode=Timer.PERIODIC, callback=do_thing1)
-    #main()
-    
-    
-    
+    blynk_mqtt = None    
+    main()

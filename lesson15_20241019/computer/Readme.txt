@@ -1,0 +1,2 @@
+requirements.txt是不成文的檔名規定，用來標示程式裡會用到的套件
+可使用pip install -r requirements.txt指令一次安裝寫在requirements.txt的套件
